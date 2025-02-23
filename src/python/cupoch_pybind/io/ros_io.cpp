@@ -61,12 +61,17 @@ void pybind_ros_io(py::module &m_io) {
                  return io::CreateFromPointCloud2Msg(data, length, info);
              });
     m_io.def("create_to_pointcloud2_msg",
-             [] (const geometry::PointCloud& pointcloud) {
-                 auto info = io::PointCloud2MsgInfo::Default(pointcloud.points_.size());
-                 char *data = new char[info.row_step_];
-                 io::CreateToPointCloud2Msg(reinterpret_cast<uint8_t *>(data), info, pointcloud);
-                 return std::make_tuple(py::bytes(data, info.row_step_), info);
-             });
+         [] (const geometry::PointCloud& pointcloud) {
+             auto info = io::PointCloud2MsgInfo::Default(pointcloud.points_.size());
+
+             // ✅ Use a vector instead of manual allocation
+             std::vector<uint8_t> data(info.row_step_);
+
+             io::CreateToPointCloud2Msg(data.data(), info, pointcloud);
+
+             // ✅ No memory leak! Return bytes from the vector
+             return std::make_tuple(py::bytes(reinterpret_cast<const char*>(data.data()), info.row_step_), info);
+         });
 
     m_io.def("create_from_image_msg",
              [] (const py::bytes &bytes, const io::ImageMsgInfo& info) {
