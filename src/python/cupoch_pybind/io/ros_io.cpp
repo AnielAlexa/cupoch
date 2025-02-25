@@ -64,12 +64,9 @@ void pybind_ros_io(py::module &m_io) {
          [] (const geometry::PointCloud& pointcloud) {
              auto info = io::PointCloud2MsgInfo::Default(pointcloud.points_.size());
 
-             // ✅ Use a vector instead of manual allocation
              std::vector<uint8_t> data(info.row_step_);
 
              io::CreateToPointCloud2Msg(data.data(), info, pointcloud);
-
-             // ✅ No memory leak! Return bytes from the vector
              return std::make_tuple(py::bytes(reinterpret_cast<const char*>(data.data()), info.row_step_), info);
          });
 
